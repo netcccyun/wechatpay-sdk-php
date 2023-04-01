@@ -108,7 +108,7 @@ class BaseService
         ksort($data);
         $signStr = '';
         foreach ($data as $k => $v) {
-            if($k != 'sign' && !$this->isEmpty($v) && !is_array($v)){
+            if($k != 'sign' && !is_array($v) && !$this->isEmpty($v)){
                 $signStr .= $k . '=' . $v . '&';
             }
         }
@@ -130,7 +130,7 @@ class BaseService
      */
     protected function isEmpty($value)
     {
-        return $value === null || trim($value) === '';
+        return $value === null || $value === '';
     }
 
     /**
