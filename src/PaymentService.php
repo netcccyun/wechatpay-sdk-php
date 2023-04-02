@@ -99,12 +99,32 @@ class PaymentService extends BaseService
     /**
      * APP支付
      * @param $params 下单参数
-     * @return mixed {"prepay_id":"预支付交易会话标识"}
+     * @return mixed APP支付json数据
      */
     public function appPay($params)
     {
         $params['trade_type'] = 'APP';
-        return $this->unifiedOrder($params);
+        $result = $this->unifiedOrder($params);
+        return $this->getAppParameters($result['prepay_id']);
+    }
+
+    /**
+     * 获取APP支付的参数
+     * @param $prepay_id 预支付交易会话标识
+     * @return array
+     */
+    private function getAppParameters($prepay_id)
+    {
+        $params = [
+            'appid' => $this->appId,
+            'partnerid' => $this->mchId,
+            'prepayid' => $prepay_id,
+            'package' => 'Sign=WXPay',
+            'noncestr' => $this->getNonceStr(),
+            'timestamp' => time().'',
+        ];
+        $params['paySign'] = $this->makeSign($params);
+        return $params;
     }
 
     /**

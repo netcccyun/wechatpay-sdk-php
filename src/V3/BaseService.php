@@ -302,6 +302,18 @@ class BaseService
     }
 
     /**
+     * 生成签名
+     * @param array $pieces - 待签名数组
+     * @return string
+     */
+    protected function makeSign($arr)
+    {
+        $message = implode("\n", array_merge($arr, ['']));
+        openssl_sign($message, $sign, $this->merchantPrivateKeyInstance, OPENSSL_ALGO_SHA256);
+        return base64_encode($sign);
+    }
+
+    /**
      * 生成authorization
      * @param $method 请求方式 GET POST PUT
      * @param $url 请求URL
@@ -309,16 +321,11 @@ class BaseService
      */
     protected function getAuthorization($method, $url, $body = '')
     {
-        $merchantPrivateKey = openssl_get_privatekey(file_get_contents($this->merchantPrivateKeyFilePath));
-        if (!$merchantPrivateKey) {
-            throw new \Exception('签名失败，商户API私钥错误');
-        }
         $url_values = parse_url($url);
-        $timestamp = time();
+        $url = $url_values['path'] . (isset($url_values['query']) ? ('?' . $url_values['query']) : '');
+        $timestamp = (string)time();
         $nonce = $this->getNonceStr();
-        $message = $method . "\n" . $url_values['path'] . (isset($url_values['query']) ? ('?' . $url_values['query']) : '') . "\n" . $timestamp . "\n" . $nonce . "\n" . $body . "\n";
-        openssl_sign($message, $sign, $merchantPrivateKey, 'sha256WithRSAEncryption');
-        $sign = base64_encode($sign);
+        $sign = $this->makeSign([$method, $url, $timestamp, $nonce, $body]);
         $token = sprintf('mchid="%s",nonce_str="%s",timestamp="%d",serial_no="%s",signature="%s"', $this->mchId, $nonce, $timestamp, $this->merchantCertificateSerial, $sign);
         return $token;
     }

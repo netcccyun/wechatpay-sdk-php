@@ -58,9 +58,7 @@ class PaymentService extends BaseService
             'nonceStr' => $this->getNonceStr(),
             'package' => 'prepay_id=' . $prepay_id,
         ];
-        $message = $params['appId'] . "\n" . $params['timeStamp'] . "\n" . $params['nonceStr'] . "\n" . $params['package'];
-        openssl_sign($message, $signature, $this->merchantPrivateKeyInstance, OPENSSL_ALGO_SHA256);
-        $params['paySign'] = base64_encode($signature);
+        $params['paySign'] = $this->makeSign([$params['appId'], $params['timeStamp'], $params['nonceStr'], $params['package']]);
         $params['signType'] = 'RSA';
         return $params;
     }
@@ -83,7 +81,7 @@ class PaymentService extends BaseService
     /**
      * APP支付
      * @param $params 下单参数
-     * @return mixed {"prepay_id":"预支付交易会话标识"}
+     * @return array APP支付json数据
      */
     public function appPay($params){
         $path = '/v3/pay/transactions/app';
@@ -92,7 +90,27 @@ class PaymentService extends BaseService
             'mchid' => $this->mchId,
         ];
         $params = array_merge($publicParams, $params);
-        return $this->execute('POST', $path, $params);
+        $result = $this->execute('POST', $path, $params);
+        return $this->getAppParameters($result['prepay_id']);
+    }
+
+    /**
+     * 获取APP支付的参数
+     * @param $prepay_id 预支付交易会话标识
+     * @return array
+     */
+    private function getAppParameters($prepay_id)
+    {
+        $params = [
+            'appid' => $this->appId,
+            'partnerid' => $this->mchId,
+            'prepayid' => $prepay_id,
+            'package' => 'Sign=WXPay',
+            'noncestr' => $this->getNonceStr(),
+            'timestamp' => time().'',
+        ];
+        $params['sign'] = $this->makeSign([$params['appid'], $params['timestamp'], $params['noncestr'], $params['prepayid']]);
+        return $params;
     }
 
     /**

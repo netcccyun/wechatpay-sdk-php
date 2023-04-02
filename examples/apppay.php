@@ -23,7 +23,7 @@ $params = [
 try {
     $client = new \WeChatPay\PaymentService($wechatpay_config);
     $result = $client->appPay($params);
-    echo $result['prepay_id'];
+    print_r($result);
 } catch (Exception $e) {
     echo '微信支付下单失败！'.$e->getMessage();
 }
