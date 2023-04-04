@@ -120,7 +120,7 @@ class JsApiTool
         $url = self::GET_MINIAPP_TOKEN_URL . '?' . http_build_query($param);
         $res = $this->curl($url);
         $data = json_decode($res, true);
-        if (isset($data['access_token']) && isset($data['openid'])) {
+        if (isset($data['session_key']) && isset($data['openid'])) {
             $this->data = $data;
             return $data['openid'];
         } elseif (isset($data['errcode'])) {
