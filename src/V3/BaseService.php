@@ -239,7 +239,7 @@ class BaseService
         $authorization = $this->getAuthorization('POST', $url, $meta_json);
         $header[] = 'Accept: application/json';
         $header[] = 'Authorization: WECHATPAY2-SHA256-RSA2048 ' . $authorization;
-        [$httpCode, $header, $response] = $this->curl($url, $header, $params);
+        [$httpCode, $header, $response] = $this->curl('POST', $url, $header, $params);
         $result = json_decode($response, true);
         if ($httpCode >= 200 && $httpCode <= 299) {
             if (!$this->checkResponseSign($response, $header)) {
