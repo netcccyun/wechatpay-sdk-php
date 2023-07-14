@@ -101,7 +101,7 @@ class ComplainService extends BaseService
     public function deleteNotifications()
     {
         $path = '/v3/merchant-service/complaint-notifications';
-        $this->execute('PUT', $path);
+        $this->execute('DELETE', $path);
     }
 
     /**

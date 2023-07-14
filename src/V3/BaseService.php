@@ -166,7 +166,7 @@ class BaseService
     {
         $url = self::$GATEWAY . $path;
         $body = '';
-        if ($method == 'GET') {
+        if ($method == 'GET' || $method == 'DELETE') {
             if (count($params) > 0) {
                 $url .= '?' . http_build_query($params);
             }
@@ -180,7 +180,7 @@ class BaseService
         if ($cert) {
             $header[] = 'Wechatpay-Serial: ' . $this->platformCertificateSerial;
         }
-        if ($method == 'POST') {
+        if ($method == 'POST' || $method == 'PUT') {
             $header[] = 'Content-Type: application/json';
         }
 
@@ -486,9 +486,11 @@ class BaseService
         if ($method == 'POST' && $body) {
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        } elseif ($method == 'PUT') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'put');
+        } elseif ($method == 'PUT' && $body) {
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
             curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        } elseif ($method == 'DELETE') {
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
         }
         $data = curl_exec($ch);
         if (curl_errno($ch) > 0) {
