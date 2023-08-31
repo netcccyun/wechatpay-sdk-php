@@ -38,7 +38,7 @@ class JsApiTool
 
     /**
      * 通过跳转获取用户的openid，跳转流程如下：
-     * 1、设置自己需要调回的url及其其他参数，跳转到微信服务器https://open.weixin.qq.com/connect/oauth2/authorize
+     * 1、设置自己需要调回的url及其其他参数，跳转到微信服务器
      * 2、微信服务处理完成之后会跳转回用户redirect_uri地址，此时会带上一些参数，如：code
      * 
      * @return 用户的openid
