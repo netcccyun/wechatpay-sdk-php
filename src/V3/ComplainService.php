@@ -146,7 +146,7 @@ class ComplainService extends BaseService
      */
     public function updateRefundProgress($complaint_id, $params)
     {
-        $path = '/v3/merchant-service/complaints-v2/'.$complaint_id.'/complete';
+        $path = '/v3/merchant-service/complaints-v2/'.$complaint_id.'/update-refund-progress';
         $this->execute('POST', $path, $params);
     }
 
@@ -161,5 +161,17 @@ class ComplainService extends BaseService
         $path = '/v3/merchant-service/images/upload';
         $result = $this->upload($path, $file_path, $file_name);
         return $result['media_id'];
+    }
+
+    /**
+     * 下载图片
+     * @param $media_id 媒体文件标识ID
+     * @return string
+     */
+    public function getImage($media_id)
+    {
+        $url = self::$GATEWAY.'/v3/merchant-service/images/'.urlencode($media_id);
+        $result = $this->download($url);
+        return $result;
     }
 }
