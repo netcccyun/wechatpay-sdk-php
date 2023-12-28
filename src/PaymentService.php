@@ -123,7 +123,7 @@ class PaymentService extends BaseService
             'noncestr' => $this->getNonceStr(),
             'timestamp' => time().'',
         ];
-        $params['paySign'] = $this->makeSign($params);
+        $params['sign'] = $this->makeSign($params);
         return $params;
     }
 
