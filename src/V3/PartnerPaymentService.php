@@ -10,6 +10,10 @@ class PartnerPaymentService extends BaseService
 {
     public function __construct($config)
     {
+        if(strpos($config['sub_mchid'], ',')){
+            $sub_mchids = explode(',', $config['sub_mchid']);
+            $config['sub_mchid'] = $sub_mchids[array_rand($sub_mchids)];
+        }
         parent::__construct($config);
     }
 
@@ -267,8 +271,8 @@ class PartnerPaymentService extends BaseService
         ];
         foreach($params['sub_orders'] as &$order){
             $order['mchid'] = $this->mchId;
-            $order['sub_mchid'] = $this->subMchId;
-            $order['sub_appid'] = $this->subAppId;
+            if(!isset($order['sub_mchid'])) $order['sub_mchid'] = $this->subMchId;
+            if(!isset($order['sub_appid'])) $order['sub_appid'] = $this->subAppId;
         }
         $params = array_merge($publicParams, $params);
         return $this->execute('POST', $path, $params);
@@ -287,8 +291,8 @@ class PartnerPaymentService extends BaseService
         ];
         foreach($params['sub_orders'] as &$order){
             $order['mchid'] = $this->mchId;
-            $order['sub_mchid'] = $this->subMchId;
-            $order['sub_appid'] = $this->subAppId;
+            if(!isset($order['sub_mchid'])) $order['sub_mchid'] = $this->subMchId;
+            if(!isset($order['sub_appid'])) $order['sub_appid'] = $this->subAppId;
         }
         $params = array_merge($publicParams, $params);
         $result = $this->execute('POST', $path, $params);
@@ -308,8 +312,8 @@ class PartnerPaymentService extends BaseService
         ];
         foreach($params['sub_orders'] as &$order){
             $order['mchid'] = $this->mchId;
-            $order['sub_mchid'] = $this->subMchId;
-            $order['sub_appid'] = $this->subAppId;
+            if(!isset($order['sub_mchid'])) $order['sub_mchid'] = $this->subMchId;
+            if(!isset($order['sub_appid'])) $order['sub_appid'] = $this->subAppId;
         }
         $params = array_merge($publicParams, $params);
         return $this->execute('POST', $path, $params);
@@ -328,8 +332,8 @@ class PartnerPaymentService extends BaseService
         ];
         foreach($params['sub_orders'] as &$order){
             $order['mchid'] = $this->mchId;
-            $order['sub_mchid'] = $this->subMchId;
-            $order['sub_appid'] = $this->subAppId;
+            if(!isset($order['sub_mchid'])) $order['sub_mchid'] = $this->subMchId;
+            if(!isset($order['sub_appid'])) $order['sub_appid'] = $this->subAppId;
         }
         $params = array_merge($publicParams, $params);
         return $this->execute('POST', $path, $params);

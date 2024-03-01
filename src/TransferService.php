@@ -78,6 +78,9 @@ class TransferService extends BaseService
     public function transferToBank($partner_trade_no, $bank_no, $name, $bank_code, $amount, $desc)
     {
         $pubKey = null;
+        if (empty($this->publicKeyPath)) {
+            throw new \Exception('RSA加密公钥路径不能为空');
+        }
         if (file_exists($this->publicKeyPath)) {
             $pubKey = file_get_contents($this->publicKeyPath);
         }
@@ -86,6 +89,7 @@ class TransferService extends BaseService
             if (!file_put_contents($this->publicKeyPath, $pubKey)) {
                 throw new \Exception('RSA加密公钥文件写入失败');
             }
+            $pubKey = $this->convertPublicKey();
         }
 
         $url = 'https://api.mch.weixin.qq.com/mmpaysptrans/pay_bank';
@@ -132,8 +136,24 @@ class TransferService extends BaseService
     private function encryptData($data, $pubKey)
     {
         $pubkeyid = openssl_get_publickey($pubKey);
-        openssl_public_encrypt($data, $encrypted, $pubkeyid);
+        if(!$pubkeyid){
+            throw new \Exception('RSA加密公钥不正确');
+        }
+        openssl_public_encrypt($data, $encrypted, $pubkeyid, OPENSSL_PKCS1_OAEP_PADDING);
         $encrypted = base64_encode($encrypted);
         return $encrypted;
+    }
+
+    private function convertPublicKey()
+    {
+        $requrl = 'http://keytool.odata.cc/api.php?act=pkcs1_to_pkcs8';
+        $params = ['cert' => new \CURLFile($this->publicKeyPath)];
+        $response = $this->curl($requrl, $params);
+        if(substr($response, 0, 2) == '{"'){
+            $arr = json_decode($response, true);
+            throw new \Exception($arr ? $arr['msg'] : 'RSA加密公钥转换失败');
+        }
+        file_put_contents($this->publicKeyPath, $response);
+        return $response;
     }
 }
