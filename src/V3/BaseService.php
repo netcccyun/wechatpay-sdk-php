@@ -45,6 +45,9 @@ class BaseService
 
     //微信支付平台证书序列号
     protected $platformCertificateSerial;
+    
+    //是否国际版商户
+    private $isGlobal = false;
 
     private $download_cert = false;
 
@@ -89,6 +92,9 @@ class BaseService
         if (isset($config['ecommerce'])) {
             $this->ecommerce = $config['ecommerce'];
         }
+        if (isset($config['isGlobal'])) {
+            $this->isGlobal = $config['isGlobal'];
+        }
 
         $this->initCertificate();
     }
@@ -125,7 +131,7 @@ class BaseService
      */
     private function downloadCertificate()
     {
-        $result = $this->execute('GET', '/v3/certificates');
+        $result = $this->execute('GET', $this->isGlobal ? '/v3/global/certificates' : '/v3/certificates');
         $effective_time = 0;
         foreach ($result['data'] as $item) {
             if (strtotime($item['effective_time']) > $effective_time) {

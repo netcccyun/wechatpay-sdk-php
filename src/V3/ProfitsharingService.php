@@ -81,10 +81,13 @@ class ProfitsharingService extends BaseService
      */
     public function query($out_order_no, $transaction_id)
     {
-        $path = $this->ecommerce ? '/v3/ecommerce/profitsharing/orders/' . $out_order_no : '/v3/profitsharing/orders/' . $out_order_no;
+        $path = $this->ecommerce ? '/v3/ecommerce/profitsharing/orders' : '/v3/profitsharing/orders/' . $out_order_no;
         $params = [
             'transaction_id' => $transaction_id,
         ];
+        if ($this->ecommerce) {
+            $params['out_order_no'] = $out_order_no;
+        }
         if (!empty($this->subMchId)) $params['sub_mchid'] = $this->subMchId;
         return $this->execute('GET', $path, $params);
     }

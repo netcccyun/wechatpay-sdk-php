@@ -73,4 +73,63 @@ class TransferService extends BaseService
         return $this->execute('GET', $path);
     }
 
+    /**
+     * 转账账单电子回单申请
+     * @param $out_batch_no 商家批次单号
+     * @return mixed
+     */
+    public function transferBatchReceiptApply($out_batch_no)
+    {
+        $path = '/v3/transfer/bill-receipt';
+        $params = [
+            'out_batch_no' => $out_batch_no
+        ];
+        return $this->execute('POST', $path, $params);
+    }
+
+    /**
+     * 查询转账账单电子回单
+     * @param $out_batch_no 商家批次单号
+     * @return mixed
+     */
+    public function transferBatchReceiptQuery($out_batch_no)
+    {
+        $path = '/v3/transfer/bill-receipt/'.$out_batch_no;
+        return $this->execute('GET', $path);
+    }
+
+    /**
+     * 转账明细电子回单申请
+     * @param $out_batch_no 商家批次单号
+     * @param $out_detail_no 商家明细单号
+     * @return mixed
+     */
+    public function transferDetailReceiptApply($out_batch_no, $out_detail_no)
+    {
+        $path = '/v3/transfer-detail/electronic-receipts';
+        $params = [
+            'accept_type' => 'BATCH_TRANSFER',
+            'out_batch_no' => $out_batch_no,
+            'out_detail_no' => $out_detail_no
+        ];
+        return $this->execute('POST', $path, $params);
+    }
+
+    /**
+     * 查询转账明细电子回单
+     * @param $out_batch_no 商家批次单号
+     * @param $out_detail_no 商家明细单号
+     * @return mixed
+     */
+    public function transferDetailReceiptQuery($out_batch_no, $out_detail_no)
+    {
+        $path = '/v3/transfer-detail/electronic-receipts';
+        $params = [
+            'accept_type' => 'BATCH_TRANSFER',
+            'out_batch_no' => $out_batch_no,
+            'out_detail_no' => $out_detail_no
+        ];
+        return $this->execute('GET', $path, $params);
+    }
+
 }
