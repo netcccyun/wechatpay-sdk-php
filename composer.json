@@ -11,8 +11,13 @@
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"require": {
-		"php": ">=7.1"
-	},
+		"php": ">=7.1",
+        "ext-openssl": "*",
+        "ext-json": "*",
+        "ext-curl": "*",
+        "ext-libxml": "*",
+        "ext-simplexml": "*"
+    },
 	"authors": [
 		{
 			"name": "caihong",

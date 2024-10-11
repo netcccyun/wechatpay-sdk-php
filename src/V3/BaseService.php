@@ -2,6 +2,8 @@
 
 namespace WeChatPay\V3;
 
+use Exception;
+
 class BaseService
 {
     //SDK版本号
@@ -51,10 +53,11 @@ class BaseService
 
     private $download_cert = false;
 
-    /**
-     * @param $config 微信支付配置信息
-     */
-    public function __construct($config)
+	/**
+	 * @param array $config 微信支付配置信息
+	 * @throws Exception
+	 */
+    public function __construct(array $config)
     {
         if (empty($config['appid'])) {
             throw new \InvalidArgumentException('应用APPID不能为空');
@@ -101,13 +104,14 @@ class BaseService
 
     /**
      * 初始化证书与私钥
+     * @throws Exception
      */
     private function initCertificate()
     {
         //读取商户API私钥
         $this->merchantPrivateKeyInstance = openssl_get_privatekey(file_get_contents($this->merchantPrivateKeyFilePath));
         if (!$this->merchantPrivateKeyInstance) {
-            throw new \Exception("商户API私钥错误");
+            throw new Exception("商户API私钥错误");
         }
         //读取微信支付平台证书
         if (file_exists($this->platformCertificateFilePath)) {
@@ -128,6 +132,7 @@ class BaseService
 
     /**
      * 下载微信支付平台证书
+     * @throws Exception
      */
     private function downloadCertificate()
     {
@@ -142,15 +147,15 @@ class BaseService
 
         $certificate = $this->decryptToString($encert['ciphertext'], $encert['nonce'], $encert['associated_data']);
         if (!$certificate) {
-            throw new \Exception('微信支付平台证书解密失败');
+            throw new Exception('微信支付平台证书解密失败');
         }
         if (!file_put_contents($this->platformCertificateFilePath, $certificate)) {
-            throw new \Exception('微信支付平台证书保存失败，可能无文件写入权限');
+            throw new Exception('微信支付平台证书保存失败，可能无文件写入权限');
         }
         //从证书解析公钥与序列号
         $this->platformPublicKeyInstance = openssl_x509_read($certificate);
         if (!$this->platformPublicKeyInstance) {
-            throw new \Exception("微信支付平台证书错误");
+            throw new Exception("微信支付平台证书错误");
         }
         $cert_info = openssl_x509_parse($certificate);
         if ($cert_info && isset($cert_info['serialNumberHex'])) {
@@ -160,15 +165,16 @@ class BaseService
     }
 
 
-    /**
-     * 请求接口并解析返回数据
-     * @param $method 请求方式 GET POST PUT
-     * @param $path 请求路径
-     * @param $params 请求参数
-     * @param $cert 是否包含平台公钥序列号
-     * @return mixed
-     */
-    public function execute($method, $path, $params = [], $cert = false)
+	/**
+	 * 请求接口并解析返回数据
+	 * @param string $method 请求方式 GET POST PUT
+	 * @param string $path 请求路径
+	 * @param array $params 请求参数
+	 * @param bool $cert 是否包含平台公钥序列号
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function execute(string $method, string $path, array $params = [], bool $cert = false)
     {
         $url = self::$GATEWAY . $path;
         $body = '';
@@ -194,19 +200,20 @@ class BaseService
         $result = json_decode($response, true);
         if ($httpCode >= 200 && $httpCode <= 299) {
             if (!$this->checkResponseSign($response, $header)) {
-                throw new \Exception("微信支付返回数据验签失败");
+                throw new Exception("微信支付返回数据验签失败");
             }
             return $result;
         }
         throw new WeChatPayException($result, $httpCode);
     }
 
-    /**
-     * 下载账单/图片
-     * @param $download_url 下载地址
-     * @return mixed
-     */
-    public function download($download_url)
+	/**
+	 * 下载账单/图片
+	 * @param string $download_url 下载地址
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function download(string $download_url)
     {
         $method = 'GET';
         $authorization = $this->getAuthorization($method, $download_url);
@@ -220,17 +227,19 @@ class BaseService
         }
     }
 
-    /**
-     * 上传文件
-     * @param $path 请求路径
-     * @param $file_path 本地文件路径
-     * @param $file_name 文件名
-     */
-    public function upload($path, $file_path, $file_name)
+	/**
+	 * 上传文件
+	 * @param string $path 请求路径
+	 * @param string $file_path 本地文件路径
+	 * @param string $file_name 文件名
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function upload(string $path, string $file_path, string $file_name)
     {
         $url = self::$GATEWAY . $path;
         if (!file_exists($file_path)) {
-            throw new \Exception("文件不存在");
+            throw new Exception("文件不存在");
         }
         $meta = [
             'filename' => $file_name,
@@ -249,7 +258,7 @@ class BaseService
         $result = json_decode($response, true);
         if ($httpCode >= 200 && $httpCode <= 299) {
             if (!$this->checkResponseSign($response, $header)) {
-                throw new \Exception("微信支付返回数据验签失败");
+                throw new Exception("微信支付返回数据验签失败");
             }
             return $result;
         }
@@ -258,11 +267,12 @@ class BaseService
 
     /**
      * 返回数据验签
-     * @param $body 返回内容
-     * @param $header 返回头部
+     * @param string $body 返回内容
+     * @param string $header 返回头部
      * @return bool
+     * @throws Exception
      */
-    protected function checkResponseSign($body, $header)
+    protected function checkResponseSign(string $body, string $header): bool
     {
         if (!$this->platformCertificateSerial) return true;
 
@@ -285,7 +295,7 @@ class BaseService
                 $this->downloadCertificate();
             }
             if ($serial != $this->platformCertificateSerial) {
-                throw new \Exception('平台证书序列号不匹配');
+                throw new Exception('平台证书序列号不匹配');
             }
         }
 
@@ -294,13 +304,13 @@ class BaseService
 
     /**
      * 验证签名
-     * @param $timestamp 应答时间戳
-     * @param $nonce 应答随机串
-     * @param $body 应答报文主体
-     * @param $signature 应答签名
+     * @param string $timestamp 应答时间戳
+     * @param string $nonce 应答随机串
+     * @param string $body 应答报文主体
+     * @param string $signature 应答签名
      * @return bool
      */
-    protected function checkSign($timestamp, $nonce, $body, $signature)
+    protected function checkSign(string $timestamp, string $nonce, string $body, string $signature): bool
     {
         $message = $timestamp . "\n" . $nonce . "\n" . $body . "\n";
         $result = openssl_verify($message, base64_decode($signature), $this->platformPublicKeyInstance, OPENSSL_ALGO_SHA256);
@@ -309,10 +319,10 @@ class BaseService
 
     /**
      * 生成签名
-     * @param array $pieces - 待签名数组
+     * @param array $arr - 待签名数组
      * @return string
      */
-    protected function makeSign($arr)
+    protected function makeSign(array $arr): string
     {
         $message = implode("\n", array_merge($arr, ['']));
         openssl_sign($message, $sign, $this->merchantPrivateKeyInstance, OPENSSL_ALGO_SHA256);
@@ -321,26 +331,26 @@ class BaseService
 
     /**
      * 生成authorization
-     * @param $method 请求方式 GET POST PUT
-     * @param $url 请求URL
-     * @param $body 请求内容 GET时留空
+     * @param string $method 请求方式 GET POST PUT
+     * @param string $url 请求URL
+     * @param string $body 请求内容 GET时留空
      */
-    protected function getAuthorization($method, $url, $body = '')
+    protected function getAuthorization(string $method, string $url, string $body = ''): string
     {
         $url_values = parse_url($url);
         $url = $url_values['path'] . (isset($url_values['query']) ? ('?' . $url_values['query']) : '');
         $timestamp = (string)time();
         $nonce = $this->getNonceStr();
         $sign = $this->makeSign([$method, $url, $timestamp, $nonce, $body]);
-        $token = sprintf('mchid="%s",nonce_str="%s",timestamp="%d",serial_no="%s",signature="%s"', $this->mchId, $nonce, $timestamp, $this->merchantCertificateSerial, $sign);
-        return $token;
+	    return sprintf('mchid="%s",nonce_str="%s",timestamp="%d",serial_no="%s",signature="%s"', $this->mchId, $nonce, $timestamp, $this->merchantCertificateSerial, $sign);
     }
 
-    /**
-     * 异步回调处理
-     * @return array 回调解密后的数据
-     */
-    public function notify()
+	/**
+	 * 异步回调处理
+	 * @return array 回调解密后的数据
+	 * @throws Exception
+	 */
+    public function notify(): array
     {
         $inWechatpaySignature = $_SERVER['HTTP_WECHATPAY_SIGNATURE'];
         $inWechatpayTimestamp = $_SERVER['HTTP_WECHATPAY_TIMESTAMP'];
@@ -349,15 +359,15 @@ class BaseService
         $inBody = file_get_contents('php://input');
 
         if (empty($inBody)) {
-            throw new \Exception('no data');
+            throw new Exception('no data');
         }
         if ($this->platformCertificateSerial != $inWechatpaySerial) {
-            throw new \Exception('平台证书序列号不匹配');
+            throw new Exception('平台证书序列号不匹配');
         }
 
         // 使用平台API证书验签
         if (!$this->checkSign($inWechatpayTimestamp, $inWechatpayNonce, $inBody, $inWechatpaySignature)) {
-            throw new \Exception('签名校验失败');
+            throw new Exception('签名校验失败');
         }
 
         // 转换通知的JSON文本消息为PHP Array数组
@@ -371,17 +381,16 @@ class BaseService
         // 加密文本消息解密
         $inBodyResource = $this->decryptToString($ciphertext, $nonce, $associated_data);
         // 把解密后的文本转换为PHP Array数组
-        $inBodyResourceArray = json_decode($inBodyResource, true);
-        // print_r($inBodyResourceArray);
-        return $inBodyResourceArray;
+	    // print_r($inBodyResourceArray);
+        return json_decode($inBodyResource, true);
     }
 
     /**
      * 回复通知
-     * @param $isSuccess 是否成功
-     * @param $msg 失败原因
+     * @param bool $isSuccess 是否成功
+     * @param string $msg 失败原因
      */
-    public function replyNotify($isSuccess = true, $msg = '')
+    public function replyNotify(bool $isSuccess = true, string $msg = '')
     {
         $data = [];
         if ($isSuccess) {
@@ -399,9 +408,9 @@ class BaseService
     /**
      * 产生随机字符串，不长于32位
      * @param int $length
-     * @return 产生的随机字符串
+     * @return string 产生的随机字符串
      */
-    protected function getNonceStr($length = 32)
+    protected function getNonceStr(int $length = 32): string
     {
         $chars = "abcdefghijklmnopqrstuvwxyz0123456789";
         $str = "";
@@ -419,8 +428,7 @@ class BaseService
     public function rsaEncrypt($str)
     {
         if (openssl_public_encrypt($str, $encrypted, $this->platformPublicKeyInstance, OPENSSL_PKCS1_OAEP_PADDING)) {
-            $text = base64_encode($encrypted);
-            return $text;
+	        return base64_encode($encrypted);
         }
         return false;
     }
@@ -438,15 +446,16 @@ class BaseService
         return false;
     }
 
-    /**
-     * 解密AEAD AES 256gcm密文
-     * @param string $ciphertext AES GCM cipher text
-     * @param string $nonceStr AES GCM nonce
-     * @param string $associatedData AES GCM additional authentication data
-     *
-     * @return string|bool Decrypted string on success or FALSE on failure
-     */
-    protected function decryptToString($ciphertext, $nonceStr, $associatedData)
+	/**
+	 * 解密AEAD AES 256gcm密文
+	 * @param string $ciphertext AES GCM cipher text
+	 * @param string $nonceStr AES GCM nonce
+	 * @param string $associatedData AES GCM additional authentication data
+	 *
+	 * @return string|bool Decrypted string on success or FALSE on failure
+	 * @throws Exception
+	 */
+    protected function decryptToString(string $ciphertext, string $nonceStr, string $associatedData)
     {
         $ciphertext = base64_decode($ciphertext);
         if (strlen($ciphertext) <= 16) {
@@ -463,19 +472,20 @@ class BaseService
             return openssl_decrypt($ctext, 'aes-256-gcm', $this->apiKey, OPENSSL_RAW_DATA, $nonceStr, $authTag, $associatedData);
         }
 
-        throw new \Exception('AEAD_AES_256_GCM需要PHP 7.1以上或者安装libsodium-php');
+        throw new Exception('AEAD_AES_256_GCM需要PHP 7.1以上或者安装libsodium-php');
     }
 
-    /**
-     * 发起curl请求
-     * @param $method 请求方式 GET POST PUT
-     * @param $url 请求URL
-     * @param $header 请求头部
-     * @param $body POST内容
-     * @param $timeout 超时时间
-     * @return array [http状态码,响应头部,响应数据]
-     */
-    protected function curl($method, $url, $header, $body = null, $timeout = 10)
+	/**
+	 * 发起curl请求
+	 * @param string $method 请求方式 GET POST PUT
+	 * @param string $url 请求URL
+	 * @param array $header 请求头部
+	 * @param null $body POST内容
+	 * @param int $timeout 超时时间
+	 * @return array [http状态码,响应头部,响应数据]
+	 * @throws Exception
+	 */
+    protected function curl(string $method, string $url, array $header, $body = null, int $timeout = 10): array
     {
         $ch = curl_init();
         $curlVersion = curl_version();
@@ -502,7 +512,7 @@ class BaseService
         if (curl_errno($ch) > 0) {
             $errmsg = curl_error($ch);
             curl_close($ch);
-            throw new \Exception($errmsg, 0);
+            throw new Exception($errmsg, 0);
         }
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
