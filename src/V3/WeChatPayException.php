@@ -10,10 +10,10 @@ class WeChatPayException extends \Exception
     private $res = [];
     private $httpCode;
 
-    /**
-     * @param array $res
-     * @param string $code
-     */
+	/**
+	 * @param array $res
+	 * @param string $httpCode
+	 */
     public function __construct($res, $httpCode)
     {
         $this->res = $res;
@@ -26,12 +26,12 @@ class WeChatPayException extends \Exception
         parent::__construct($message);
     }
 
-    public function getResponse()
+    public function getResponse(): array
     {
         return $this->res;
     }
 
-    public function getHttpCode()
+    public function getHttpCode(): string
     {
         return $this->httpCode;
     }
