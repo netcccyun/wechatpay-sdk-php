@@ -8,6 +8,7 @@ namespace WeChatPay\V3;
 class WeChatPayException extends \Exception
 {
     private $res = [];
+    private $errCode;
     private $httpCode;
 
 	/**
@@ -19,6 +20,7 @@ class WeChatPayException extends \Exception
         $this->res = $res;
         $this->httpCode = $httpCode;
         if(is_array($res)){
+            $this->errCode = $res['code'];
             $message = '['.$res['code'].']'.$res['message'].(isset($res['detail']['issue'])?'('.$res['detail']['issue'].')':'');
         }else{
             $message = '返回数据解析失败(http_code='.$httpCode.')';
@@ -29,6 +31,11 @@ class WeChatPayException extends \Exception
     public function getResponse(): array
     {
         return $this->res;
+    }
+    
+    public function getErrCode()
+    {
+        return $this->errCode;
     }
 
     public function getHttpCode(): string

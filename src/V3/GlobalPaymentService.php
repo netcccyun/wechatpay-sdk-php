@@ -15,6 +15,33 @@ class GlobalPaymentService extends BaseService
         parent::__construct($config);
     }
 
+    /**
+     * 付款码支付
+     * @param array $params 下单参数
+     * @return mixed
+     * @throws Exception
+     */
+    public function microPay(array $params){
+        $path = '/v3/global/micropay/transactions/pay';
+        if (!empty($this->subMchId)) {
+            $publicParams = [
+                'sp_appid' => $this->appId,
+                'sp_mchid' => $this->mchId,
+                'sub_mchid' => $this->subMchId,
+            ];
+            if (!empty($this->subAppId)) {
+                $publicParams['sub_appid'] = $this->subAppId;
+            }
+        } else {
+            $publicParams = [
+                'appid' => $this->appId,
+                'mchid' => $this->mchId,
+            ];
+        }
+        $params = array_merge($publicParams, $params);
+        $params['trade_type'] = 'MICROPAY';
+        return $this->execute('POST', $path, $params);
+    }
 
 	/**
 	 * NATIVE支付
@@ -234,13 +261,34 @@ class GlobalPaymentService extends BaseService
         return $this->execute('POST', $path, $params);
     }
 
-	/**
-	 * 申请退款
-	 * @param array $params
-	 * @return mixed
-	 * @throws Exception
-	 */
-    public function refund(array $params){
+    /**
+     * 撤销订单
+     * @param string $out_trade_no 商户订单号
+     * @return mixed
+     * @throws Exception
+     */
+    public function reverseOrder($out_trade_no){
+        $path = '/v3/global/micropay/transactions/out-trade-no/'.$out_trade_no.'/reverse';
+        if (!empty($this->subMchId)) {
+            $params = [
+                'sp_mchid' => $this->mchId,
+                'sub_mchid' => $this->subMchId,
+            ];
+        } else {
+            $params = [
+                'mchid' => $this->mchId,
+            ];
+        }
+        return $this->execute('POST', $path, $params);
+    }
+
+    /**
+     * 申请退款
+     * @param array $params
+     * @return mixed
+     * @throws Exception
+     */
+    public function refund($params){
         $path = '/v3/global/refunds';
         if (!empty($this->subMchId)) {
             $publicParams = [
