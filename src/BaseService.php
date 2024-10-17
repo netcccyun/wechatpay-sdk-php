@@ -182,13 +182,13 @@ class BaseService
 	/**
 	 * 以post方式提交xml到对应的接口url
 	 * @param string $url url
-	 * @param string $xml 需要post的xml数据
+	 * @param mixed $xml 需要post的xml数据
 	 * @param bool $useCert 是否需要证书
 	 * @param int $second url执行超时时间
 	 * @return string
 	 * @throws Exception
 	 */
-    protected function curl(string $url, string $xml, bool $useCert = false, int $second = 10): string
+    protected function curl(string $url, $xml, bool $useCert = false, int $second = 10): string
     {
         $ch = curl_init();
         $curlVersion = curl_version();

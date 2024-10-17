@@ -388,9 +388,9 @@ class BaseService
     /**
      * 回复通知
      * @param bool $isSuccess 是否成功
-     * @param string $msg 失败原因
+     * @param string|null $msg 失败原因
      */
-    public function replyNotify(bool $isSuccess = true, string $msg = '')
+    public function replyNotify(bool $isSuccess = true, ?string $msg = '')
     {
         $data = [];
         if ($isSuccess) {
