@@ -199,7 +199,7 @@ class BaseService
         [$httpCode, $header, $response] = $this->curl($method, $url, $header, $body);
         $result = json_decode($response, true);
         if ($httpCode >= 200 && $httpCode <= 299) {
-            if (!$this->checkResponseSign($response, $header)) {
+            if ($path != '/v3/certificates' && $path != '/v3/global/certificates' && !$this->checkResponseSign($response, $header)) {
                 throw new Exception("微信支付返回数据验签失败");
             }
             return $result;

@@ -18,17 +18,18 @@ class ProfitsharingService extends BaseService
 
 	/**
 	 * 添加分账接收方
+	 * @param string $type 分账接收方类型
 	 * @param string $account 分账接收方账号
 	 * @param string|null $name 用户姓名(填写后校验)
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function addReceiver(string $account, string $name = null)
+    public function addReceiver(string $type, string $account, string $name = null)
     {
         $path = $this->ecommerce ? '/v3/ecommerce/profitsharing/receivers/add' : '/v3/profitsharing/receivers/add';
         $params = [
             'appid' => $this->appId,
-            'type' => 'PERSONAL_OPENID',
+            'type' => $type,
             'account' => $account,
             'relation_type' => 'SUPPLIER',
         ];
@@ -45,16 +46,17 @@ class ProfitsharingService extends BaseService
 
 	/**
 	 * 删除分账接收方
+	 * @param string $type 分账接收方类型
 	 * @param string $account 分账接收方账号
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function deleteReceiver(string $account)
+    public function deleteReceiver($type, string $account)
     {
         $path = $this->ecommerce ? '/v3/ecommerce/profitsharing/receivers/delete' : '/v3/profitsharing/receivers/delete';
         $params = [
             'appid' => $this->appId,
-            'type' => 'PERSONAL_OPENID',
+            'type' => $type,
             'account' => $account,
         ];
         if (!empty($this->subMchId)) $params['sub_mchid'] = $this->subMchId;

@@ -166,7 +166,6 @@ class PaymentService extends BaseService
         if (empty($params['auth_code'])) {
             throw new \InvalidArgumentException('缺少付款码支付接口必填参数auth_code');
         }
-        $params['trade_type'] = 'MICROPAY';
         return $this->execute($url, $params);
     }
 
