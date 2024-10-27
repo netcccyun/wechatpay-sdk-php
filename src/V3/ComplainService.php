@@ -118,11 +118,11 @@ class ComplainService extends BaseService
 	 * @param string $complaint_id 投诉单号
 	 * @param string $complainted_mchid 被诉商户号
 	 * @param string $response_content 回复内容
-	 * @param string $response_images 回复图片列表
+	 * @param array $response_images 回复图片列表
 	 * @return void
 	 * @throws Exception
 	 */
-    public function response(string $complaint_id, string $complainted_mchid, string $response_content, string $response_images)
+    public function response(string $complaint_id, string $complainted_mchid, string $response_content, array $response_images)
     {
         $path = '/v3/merchant-service/complaints-v2/'.$complaint_id.'/response';
         $params = [
