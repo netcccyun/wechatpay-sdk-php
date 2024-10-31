@@ -39,15 +39,15 @@ class BaseService
     //「微信支付平台证书」文件路径
     protected $platformCertificateFilePath;
 
+    //微信支付平台证书序列号
+    protected $platformCertificateSerial;
+
     //商户API私钥
     protected $merchantPrivateKeyInstance;
 
     //微信支付平台证书
     protected $platformPublicKeyInstance;
 
-    //微信支付平台证书序列号
-    protected $platformCertificateSerial;
-    
     //是否国际版商户
     private $isGlobal = false;
 
@@ -86,6 +86,7 @@ class BaseService
         $this->merchantPrivateKeyFilePath = $config['merchantPrivateKeyFilePath'];
         $this->merchantCertificateSerial = $config['merchantCertificateSerial'];
         $this->platformCertificateFilePath = $config['platformCertificateFilePath'];
+        $this->platformCertificateSerial = $config['platformCertificateSerial'];
         if (isset($config['sub_mchid'])) {
             $this->subMchId = $config['sub_mchid'];
         }
@@ -109,15 +110,15 @@ class BaseService
     private function initCertificate()
     {
         //读取商户API私钥
-        $this->merchantPrivateKeyInstance = openssl_get_privatekey(file_get_contents($this->merchantPrivateKeyFilePath));
+        $this->merchantPrivateKeyInstance = openssl_pkey_get_private(file_get_contents($this->merchantPrivateKeyFilePath));
         if (!$this->merchantPrivateKeyInstance) {
             throw new Exception("商户API私钥错误");
         }
-        //读取微信支付平台证书
+        //读取微信支付平台证书或公钥
         if (file_exists($this->platformCertificateFilePath)) {
             $certificate = file_get_contents($this->platformCertificateFilePath);
-            $this->platformPublicKeyInstance = openssl_x509_read($certificate);
-            if ($this->platformPublicKeyInstance) {
+            $this->platformPublicKeyInstance = openssl_pkey_get_public($certificate);
+            if($this->platformPublicKeyInstance && empty($this->platformCertificateSerial)) {
                 $cert_info = openssl_x509_parse($certificate);
                 if ($cert_info && isset($cert_info['serialNumberHex'])) {
                     $this->platformCertificateSerial = $cert_info['serialNumberHex'];
