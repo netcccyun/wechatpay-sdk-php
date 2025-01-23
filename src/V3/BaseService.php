@@ -183,7 +183,7 @@ class BaseService
             if (count($params) > 0) {
                 $url .= '?' . http_build_query($params);
             }
-        } else {
+        } elseif(!empty($params)) {
             $body = json_encode($params);
         }
 
@@ -500,10 +500,10 @@ class BaseService
         curl_setopt($ch, CURLOPT_USERAGENT, $ua);
         curl_setopt($ch, CURLOPT_HEADER, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        if ($method == 'POST' && $body) {
+        if ($method == 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        } elseif ($method == 'PUT' && $body) {
+        } elseif ($method == 'PUT') {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
             curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         } elseif ($method == 'DELETE') {

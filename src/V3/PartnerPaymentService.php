@@ -77,11 +77,11 @@ class PartnerPaymentService extends BaseService
 
 	/**
 	 * H5支付
-	 * @param string $params 下单参数
+	 * @param array $params 下单参数
 	 * @return mixed {"h5_url":"支付跳转链接"}
 	 * @throws Exception
 	 */
-    public function h5Pay(string $params){
+    public function h5Pay(array $params){
         $path = '/v3/pay/partner/transactions/h5';
         $publicParams = [
             'sp_appid' => $this->appId,

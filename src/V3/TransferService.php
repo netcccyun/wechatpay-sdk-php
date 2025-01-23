@@ -143,4 +143,81 @@ class TransferService extends BaseService
         return $this->execute('GET', $path, $params);
     }
 
+
+    /**
+	 * 发起转账
+	 * @param array $params 请求参数
+	 * @return mixed {"out_bill_no":"商户单号","transfer_bill_no":"微信转账单号","create_time":"批次创建时间","state":"单据状态","fail_reason":"失败原因","package_info":"跳转领取页面的package信息"}
+	 * @throws Exception
+	 */
+    public function mchTransfer(array $params)
+    {
+        $path = '/v3/fund-app/mch-transfer/transfer-bills';
+        $publicParams = [
+            'appid' => $this->appId,
+        ];
+        $params = array_merge($publicParams, $params);
+        return $this->execute('POST', $path, $params, true);
+    }
+
+    /**
+	 * 撤销转账
+	 * @param string $out_bill_no 商户单号
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function cancelTransfer(string $out_bill_no)
+    {
+        $path = '/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/'.$out_bill_no.'/cancel';
+        return $this->execute('POST', $path);
+    }
+
+    /**
+	 * 商户单号查询转账单
+	 * @param string $out_bill_no 商户单号
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function queryTransferByOutNo(string $out_bill_no){
+        $path = '/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/'.$out_bill_no;
+        return $this->execute('GET', $path);
+    }
+
+    /**
+	 * 微信单号查询转账单
+	 * @param string $transfer_bill_no 微信单号
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function queryTransfer(string $transfer_bill_no){
+        $path = '/v3/fund-app/mch-transfer/transfer-bills/transfer-bill-no/'.$transfer_bill_no;
+        return $this->execute('GET', $path);
+    }
+
+    /**
+	 * 申请电子回单
+	 * @param string $out_bill_no 商户单号
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function transferReceiptApply(string $out_bill_no)
+    {
+        $path = '/v3/fund-app/mch-transfer/elecsign/out-bill-no';
+        $params = [
+            'out_bill_no' => $out_bill_no,
+        ];
+        return $this->execute('POST', $path, $params);
+    }
+
+	/**
+	 * 查询电子回单
+	 * @param string $out_bill_no 商户单号
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function transferReceiptQuery(string $out_bill_no)
+    {
+        $path = '/v3/fund-app/mch-transfer/elecsign/out-bill-no/'.$out_bill_no;
+        return $this->execute('GET', $path);
+    }
 }
