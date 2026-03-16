@@ -90,8 +90,9 @@ class PaymentService extends BaseService
      */
     private function getJsApiParameters(string $prepay_id): array
     {
+        $appId = !empty($this->subAppId) ? $this->subAppId : $this->appId;
         $params = [
-            'appId' => $this->appId,
+            'appId' => $appId,
             'timeStamp' => time() . '',
             'nonceStr' => $this->getNonceStr(),
             'package' => 'prepay_id=' . $prepay_id,
@@ -121,8 +122,9 @@ class PaymentService extends BaseService
      */
     private function getAppParameters(string $prepay_id): array
     {
+        $appId = !empty($this->subAppId) ? $this->subAppId : $this->appId;
         $params = [
-            'appid' => $this->appId,
+            'appid' => $appId,
             'partnerid' => $this->mchId,
             'prepayid' => $prepay_id,
             'package' => 'Sign=WXPay',
@@ -370,7 +372,7 @@ class PaymentService extends BaseService
      * @param bool $isSuccess 是否成功
      * @param string|null $msg 失败原因
      */
-    public function replyNotify(bool $isSuccess = true, ?string $msg = '')
+    public function replyNotify(bool $isSuccess = true, ?string $msg = '', bool $return = false)
     {
         $data = [];
         if ($isSuccess) {
@@ -381,6 +383,7 @@ class PaymentService extends BaseService
             $data['return_msg'] = $msg;
         }
         $xml = $this->array2Xml($data);
+        if ($return) return $xml;
         echo $xml;
     }
 }

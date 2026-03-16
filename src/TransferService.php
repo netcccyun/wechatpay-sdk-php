@@ -42,6 +42,7 @@ class TransferService extends BaseService
             'mchid' => $this->mchId,
             'partner_trade_no' => $partner_trade_no,
             'openid' => $openid,
+            'check_name' => 'NO_CHECK',
             'amount' => $amount,
             'desc' => $desc
         ];

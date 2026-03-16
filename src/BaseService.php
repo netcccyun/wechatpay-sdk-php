@@ -202,7 +202,7 @@ class BaseService
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         if ($useCert) {
-            if (!file_exists($this->sslCertPath) || !file_exists($this->sslKeyPath)) {
+            if (empty($this->sslCertPath) || empty($this->sslKeyPath) || !file_exists($this->sslCertPath) || !file_exists($this->sslKeyPath)) {
                 throw new Exception('商户证书文件不存在');
             }
             //使用证书：cert 与 key 分别属于两个.pem文件

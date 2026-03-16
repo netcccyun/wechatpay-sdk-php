@@ -195,6 +195,45 @@ class TransferService extends BaseService
     }
 
     /**
+	 * 发起QQ钱包转账
+	 * @param array $params 请求参数
+	 * @return mixed {"out_bill_no":"商户单号","transfer_bill_no":"微信转账单号","create_time":"批次创建时间","state":"单据状态","fail_reason":"失败原因","package_info":"跳转领取页面的package信息"}
+	 * @throws Exception
+	 */
+    public function transferToQQ(array $params)
+    {
+        $path = '/v3/fund-app/mch-transfer/transfer-to-qq-wallet-bills';
+        $publicParams = [
+            'appid' => $this->appId,
+        ];
+        $params = array_merge($publicParams, $params);
+        return $this->execute('POST', $path, $params, true);
+    }
+
+    /**
+	 * 撤销QQ钱包转账
+	 * @param string $out_bill_no 商户单号
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function cancelQQTransfer(string $out_bill_no)
+    {
+        $path = '/v3/fund-app/mch-transfer/transfer-to-qq-wallet-bills/'.$out_bill_no.'/cancel';
+        return $this->execute('POST', $path);
+    }
+
+    /**
+	 * 商户单号查询QQ钱包转账单
+	 * @param string $out_bill_no 商户单号
+	 * @return mixed
+	 * @throws Exception
+	 */
+    public function queryQQTransfer(string $out_bill_no){
+        $path = '/v3/fund-app/mch-transfer/transfer-to-qq-wallet-bills/'.$out_bill_no;
+        return $this->execute('GET', $path);
+    }
+
+    /**
 	 * 申请电子回单
 	 * @param string $out_bill_no 商户单号
 	 * @return mixed

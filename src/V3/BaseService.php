@@ -431,7 +431,7 @@ class BaseService
         ]] = $inBodyArray;
         // 加密文本消息解密
         $inBodyResource = $this->decryptToString($ciphertext, $nonce, $associated_data);
-        if (is_null($inBodyResource)) {
+        if (!$inBodyResource) {
             throw new Exception('数据解密失败');
         }
         // 把解密后的文本转换为PHP Array数组
@@ -444,7 +444,7 @@ class BaseService
      * @param bool $isSuccess 是否成功
      * @param string|null $msg 失败原因
      */
-    public function replyNotify(bool $isSuccess = true, ?string $msg = '')
+    public function replyNotify(bool $isSuccess = true, ?string $msg = '', bool $return = false)
     {
         $data = [];
         if ($isSuccess) {
@@ -454,6 +454,7 @@ class BaseService
             $data['code'] = 'FAIL';
             $data['message'] = $msg;
         }
+        if ($return) return $data;
         $json = json_encode($data, JSON_UNESCAPED_UNICODE);
         echo $json;
     }
