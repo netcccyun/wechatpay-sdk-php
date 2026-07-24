@@ -178,7 +178,7 @@ class PaymentService extends BaseService
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function reverse(string $transaction_id = null, string $out_trade_no = null)
+    public function reverse(?string $transaction_id = null, ?string $out_trade_no = null)
     {
         $url = 'https://api.mch.weixin.qq.com/secapi/pay/reverse';
         $params = [];
@@ -197,7 +197,7 @@ class PaymentService extends BaseService
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function orderQuery(string $transaction_id = null, string $out_trade_no = null)
+    public function orderQuery(?string $transaction_id = null, ?string $out_trade_no = null)
     {
         $url = 'https://api.mch.weixin.qq.com/pay/orderquery';
         $params = [];

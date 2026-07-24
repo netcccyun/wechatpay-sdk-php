@@ -128,7 +128,7 @@ class PaymentService extends BaseService
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function orderQuery(string $transaction_id = null, string $out_trade_no = null){
+    public function orderQuery(?string $transaction_id = null, ?string $out_trade_no = null){
         if(!empty($transaction_id)){
             $path = '/v3/pay/transactions/id/'.$transaction_id;
         }elseif(!empty($out_trade_no)){

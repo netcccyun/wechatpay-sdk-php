@@ -24,7 +24,7 @@ class ProfitsharingService extends BaseService
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function addReceiver(string $type, string $account, string $name = null)
+    public function addReceiver(string $type, string $account, ?string $name = null)
     {
         $path = $this->ecommerce ? '/v3/ecommerce/profitsharing/receivers/add' : '/v3/profitsharing/receivers/add';
         $params = [
@@ -51,7 +51,7 @@ class ProfitsharingService extends BaseService
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function deleteReceiver($type, string $account)
+    public function deleteReceiver(string $type, string $account)
     {
         $path = $this->ecommerce ? '/v3/ecommerce/profitsharing/receivers/delete' : '/v3/profitsharing/receivers/delete';
         $params = [

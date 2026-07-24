@@ -32,6 +32,8 @@ class BaseService
 
     //公共请求参数
     protected $publicParams = [];
+    
+    private $signType;
 
     /**
      * @param array $config 微信支付配置信息
@@ -72,6 +74,7 @@ class BaseService
     public function execute(string $url, array $params, bool $cert = false)
     {
         $params = array_merge($this->publicParams, $params);
+        $this->signType = isset($params['sign_type']) ? $params['sign_type'] : 'MD5';
         $params['sign'] = $this->makeSign($params);
         $xml = $this->array2Xml($params);
         $response = $this->curl($url, $xml, $cert);
@@ -116,7 +119,7 @@ class BaseService
             }
         }
         $signStr = trim($signStr, '&') . '&key=' . $this->apiKey;
-        if (isset($data['sign_type']) && $data['sign_type'] == 'HMAC-SHA256') {
+        if ($this->signType === 'HMAC-SHA256') {
             $sign = hash_hmac("sha256", $signStr, $this->apiKey);
         } else {
             $sign = md5($signStr);

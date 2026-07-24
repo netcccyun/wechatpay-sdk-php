@@ -15,8 +15,6 @@ class ProfitsharingService extends BaseService
         parent::__construct($config);
 
         $this->publicParams = [
-            'appid'      => $this->appId,
-            'mch_id'     => $this->mchId,
             'nonce_str'  => $this->getNonceStr(),
             'sign_type'  => 'HMAC-SHA256',
         ];
@@ -30,21 +28,24 @@ class ProfitsharingService extends BaseService
 
 	/**
 	 * 添加分账接收方
+	 * @param string $type 分账接收方类型
 	 * @param string $account 分账接收方账号
 	 * @param string|null $name 用户姓名(填写后校验)
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function addReceiver(string $account, string $name = null)
+    public function addReceiver(string $type, string $account, ?string $name = null)
     {
         $url = 'https://api.mch.weixin.qq.com/pay/profitsharingaddreceiver';
         $receiver = [
-            'type' => 'PERSONAL_OPENID',
+            'type' => $type,
             'account' => $account,
             'relation_type' => 'SERVICE_PROVIDER'
         ];
         if(!empty($name)) $receiver['name'] = $name;
         $params = [
+            'appid' => $this->appId,
+            'mch_id' => $this->mchId,
             'receiver' => json_encode($receiver, JSON_UNESCAPED_UNICODE)
         ];
         return $this->execute($url, $params);
@@ -52,18 +53,21 @@ class ProfitsharingService extends BaseService
 
 	/**
 	 * 删除分账接收方
+	 * @param string $type 分账接收方类型
 	 * @param string $account 分账接收方账号
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function deleteReceiver(string $account)
+    public function deleteReceiver(string $type, string $account)
     {
         $url = 'https://api.mch.weixin.qq.com/pay/profitsharingremovereceiver';
         $receiver = [
-            'type' => 'PERSONAL_OPENID',
+            'type' => $type,
             'account' => $account
         ];
         $params = [
+            'appid' => $this->appId,
+            'mch_id' => $this->mchId,
             'receiver' => json_encode($receiver, JSON_UNESCAPED_UNICODE)
         ];
         return $this->execute($url, $params);
@@ -71,29 +75,18 @@ class ProfitsharingService extends BaseService
 
 	/**
 	 * 请求单次分账
-	 * @param string $out_order_no 商户分账单号
-	 * @param string $transaction_id 微信订单号
-	 * @param string $openid 分账接收方账号
-	 * @param string $name 用户姓名(填写后校验)
-	 * @param int $amount 分账金额(分)
+	 * @param array $params 请求参数 (transaction_id, out_order_no, receivers)
 	 * @return mixed {"transaction_id":"微信订单号","out_order_no":"商户分账单号","order_id":"微信分账单号","status":"分账单状态","receivers":""}
 	 * @throws Exception
 	 */
-    public function submit(string $out_order_no, string $transaction_id, string $openid, string $name, int $amount)
+    public function submit(array $params)
     {
         $url = 'https://api.mch.weixin.qq.com/secapi/pay/profitsharing';
-        $receiver = [
-            'type' => 'PERSONAL_OPENID',
-            'account' => $openid,
-            'amount' => $amount,
-            'description' => '订单分账'
+        $public_params = [
+            'appid' => $this->appId,
+            'mch_id' => $this->mchId,
         ];
-        if(!empty($name)) $receiver['name'] = $name;
-        $params = [
-            'out_order_no' => $out_order_no,
-            'transaction_id' => $transaction_id,
-            'receivers' => json_encode([$receiver], JSON_UNESCAPED_UNICODE)
-        ];
+        $params = array_merge($public_params, $params);
         return $this->execute($url, $params, true);
     }
 
@@ -108,6 +101,7 @@ class ProfitsharingService extends BaseService
     {
         $url = 'https://api.mch.weixin.qq.com/pay/profitsharingquery';
         $params = [
+            'mch_id' => $this->mchId,
             'out_order_no' => $out_order_no,
             'transaction_id' => $transaction_id
         ];
@@ -125,6 +119,8 @@ class ProfitsharingService extends BaseService
     {
         $url = 'https://api.mch.weixin.qq.com/secapi/pay/profitsharingfinish';
         $params = [
+            'appid' => $this->appId,
+            'mch_id' => $this->mchId,
             'out_order_no' => $out_order_no,
             'transaction_id' => $transaction_id,
             'description' => '分账已完成'
@@ -142,6 +138,7 @@ class ProfitsharingService extends BaseService
     {
         $url = 'https://api.mch.weixin.qq.com/pay/profitsharingorderamountquery';
         $params = [
+            'mch_id' => $this->mchId,
             'transaction_id' => $transaction_id,
         ];
         return $this->execute($url, $params);
@@ -162,6 +159,11 @@ class ProfitsharingService extends BaseService
         if (empty($params['out_return_no'])) {
             throw new \InvalidArgumentException('out_return_no参数不能为空');
         }
+        $public_params = [
+            'appid' => $this->appId,
+            'mch_id' => $this->mchId,
+        ];
+        $params = array_merge($public_params, $params);
         return $this->execute($url, $params, true);
     }
 
@@ -176,6 +178,8 @@ class ProfitsharingService extends BaseService
     {
         $url = 'https://api.mch.weixin.qq.com/pay/profitsharingreturnquery';
         $params = [
+            'appid' => $this->appId,
+            'mch_id' => $this->mchId,
             'out_order_no' => $out_order_no,
             'out_return_no' => $out_return_no
         ];

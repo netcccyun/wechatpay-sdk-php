@@ -203,7 +203,7 @@ class GlobalPaymentService extends BaseService
 	 * @return mixed
 	 * @throws Exception
 	 */
-    public function orderQuery(string $transaction_id = null, string $out_trade_no = null){
+    public function orderQuery(?string $transaction_id = null, ?string $out_trade_no = null){
         if(!empty($transaction_id)){
             $path = '/v3/global/transactions/id/'.$transaction_id;
         }elseif(!empty($out_trade_no)){
@@ -267,7 +267,7 @@ class GlobalPaymentService extends BaseService
      * @return mixed
      * @throws Exception
      */
-    public function reverseOrder($out_trade_no){
+    public function reverseOrder(string $out_trade_no){
         $path = '/v3/global/micropay/transactions/out-trade-no/'.$out_trade_no.'/reverse';
         if (!empty($this->subMchId)) {
             $params = [
