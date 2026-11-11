@@ -343,28 +343,37 @@ class PaymentService extends BaseService
 
     /**
      * 退款结果通知
-     * @param array &$errmsg 错误信息
-     * @return bool|string
+     * @return array 解密后的退款通知参数
+     * @throws Exception
      */
-    public function refundNotify(array &$errmsg): bool
+    public function refundNotify(): array
     {
         $xml = file_get_contents("php://input");
         if (empty($xml)) {
-            $errmsg = 'NO_DATA';
-            return false;
+            throw new Exception('NO_DATA');
         }
         $result = $this->xml2array($xml);
         if (!$result) {
-            $errmsg = 'XML_ERROR';
-            return false;
+            throw new Exception('XML_ERROR');
         }
         if ($result['return_code'] != 'SUCCESS') {
-            $errmsg = $result['return_msg'];
-            return false;
+            throw new Exception($result['return_msg'] ?? 'FAIL');
         }
+        if (empty($result['req_info'])) {
+            throw new Exception('缺少req_info参数');
+        }
+        // req_info解密：base64解码后，使用MD5(商户APIv2密钥)进行AES-256-ECB解密
         $req_info = base64_decode($result['req_info']);
         $md5_key = md5($this->apiKey);
-	    return openssl_decrypt($req_info, 'aes-256-ecb', $md5_key);
+        $decrypted = openssl_decrypt($req_info, 'aes-256-ecb', $md5_key, OPENSSL_RAW_DATA);
+        if (!$decrypted) {
+            throw new Exception('数据解密失败');
+        }
+        $data = $this->xml2array($decrypted);
+        if (!$data) {
+            throw new Exception('解密数据解析失败');
+        }
+        return $data;
     }
 
     /**

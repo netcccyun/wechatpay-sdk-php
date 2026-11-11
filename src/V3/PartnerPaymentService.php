@@ -12,10 +12,6 @@ class PartnerPaymentService extends BaseService
 {
     public function __construct(array $config)
     {
-        if(strpos($config['sub_mchid'], ',')){
-            $sub_mchids = explode(',', $config['sub_mchid']);
-            $config['sub_mchid'] = $sub_mchids[array_rand($sub_mchids)];
-        }
         parent::__construct($config);
     }
 
