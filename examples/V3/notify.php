@@ -9,8 +9,9 @@ require __DIR__ . '/../../vendor/autoload.php';
 $wechatpay_config = require('config.php');
 
 $isSuccess = true;
+$errmsg = '';
+$client = new \WeChatPay\V3\PaymentService($wechatpay_config);
 try{
-    $client = new \WeChatPay\V3\PaymentService($wechatpay_config);
     $data = $client->notify();
     //签名校验成功且订单支付成功，根据商户订单号($data['out_trade_no'])在商户系统中处理业务
 

@@ -38,7 +38,7 @@ try {
     $result = $client->h5Pay($params);
     
     //H5支付跳转地址
-    $url=$result['mweb_url'].'&redirect_url='.urlencode($redirect_url);
+    $url=$result['h5_url'].'&redirect_url='.urlencode($redirect_url);
     ob_clean();
     header('Location: '.$url);
 

@@ -17,11 +17,11 @@ class WeChatPayException extends \Exception
 	 */
     public function __construct($res, $httpCode)
     {
-        $this->res = $res;
+        $this->res = is_array($res) ? $res : [];
         $this->httpCode = $httpCode;
-        if(is_array($res)){
-            $this->errCode = $res['code'];
-            $message = '['.$res['code'].']'.$res['message'].(isset($res['detail']['issue'])?'('.$res['detail']['issue'].')':'');
+        if(is_array($res) && (isset($res['code']) || isset($res['message']))){
+            $this->errCode = $res['code'] ?? null;
+            $message = '['.($res['code'] ?? '').']'.($res['message'] ?? '').(isset($res['detail']['issue']) && is_string($res['detail']['issue'])?'('.$res['detail']['issue'].')':'');
         }else{
             $message = '返回数据解析失败(http_code='.$httpCode.')';
         }
@@ -40,6 +40,6 @@ class WeChatPayException extends \Exception
 
     public function getHttpCode(): string
     {
-        return $this->httpCode;
+        return (string)$this->httpCode;
     }
 }

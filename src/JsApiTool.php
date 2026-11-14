@@ -48,7 +48,7 @@ class JsApiTool
 	 */
     public function GetOpenid(): string
     {
-        if (!isset($_GET['code'])) {
+        if (!isset($_GET['code']) || !is_string($_GET['code'])) {
             $this->login();
         }
         $code = $_GET['code'];
@@ -149,7 +149,6 @@ class JsApiTool
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Linux; U; Android 4.0.4; es-mx; HTC_One_X Build/IMM76D) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0");
         $res = curl_exec($ch);
-        curl_close($ch);
-        return $res;
+        return $res === false ? '' : $res;
     }
 }

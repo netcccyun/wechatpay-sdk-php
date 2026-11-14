@@ -11,16 +11,17 @@ class WeChatPayException extends \Exception
     private $errCode;
 
     /**
-     * @param array $res
+     * @param array|false|null $res
      */
     public function __construct($res)
     {
+        $res = is_array($res) ? $res : [];
         $this->res = $res;
         if (isset($res['err_code'])) {
             $this->errCode = $res['err_code'];
-            $message = '['.$res['err_code'].']'.$res['err_code_des'];
+            $message = '['.$res['err_code'].']'.self::str($res['err_code_des'] ?? '');
         } elseif (isset($res['return_code'])) {
-            $message = '['.$res['return_code'].']'.$res['return_msg'];
+            $message = '['.$res['return_code'].']'.self::str($res['return_msg'] ?? '');
         } else {
             $message = '返回数据解析失败';
         }
@@ -35,5 +36,10 @@ class WeChatPayException extends \Exception
     public function getErrCode()
     {
         return $this->errCode;
+    }
+
+    private static function str($value): string
+    {
+        return is_array($value) ? '' : (string)$value;
     }
 }

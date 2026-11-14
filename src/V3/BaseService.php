@@ -91,8 +91,8 @@ class BaseService
         if (isset($config['platformPublicKeyFilePath'])) {
             $this->platformPublicKeyFilePath = $config['platformPublicKeyFilePath'];
         }
-        $this->platformCertificateFilePath = $config['platformCertificateFilePath'];
-        $this->platformCertificateSerial = $config['platformCertificateSerial'];
+        $this->platformCertificateFilePath = $config['platformCertificateFilePath'] ?? null;
+        $this->platformCertificateSerial = $config['platformCertificateSerial'] ?? null;
         if (isset($config['sub_mchid'])) {
             $this->subMchId = $config['sub_mchid'];
         }
@@ -147,7 +147,7 @@ class BaseService
      */
     private function loadPlatformCertificate()
     {
-        if (file_exists($this->platformCertificateFilePath)) {
+        if (!empty($this->platformCertificateFilePath) && file_exists($this->platformCertificateFilePath)) {
             $certificate = file_get_contents($this->platformCertificateFilePath);
             $this->platformPublicKeyInstance = openssl_pkey_get_public($certificate);
             if ($this->platformPublicKeyInstance) {
@@ -171,18 +171,25 @@ class BaseService
     {
         $result = $this->execute('GET', $this->isGlobal ? '/v3/global/certificates' : '/v3/certificates');
         $effective_time = 0;
-        foreach ($result['data'] as $item) {
-            if (strtotime($item['effective_time']) > $effective_time) {
-                $effective_time = strtotime($item['effective_time']);
-                $encert = $item['encrypt_certificate'];
+        $encert = null;
+        if (isset($result['data']) && is_array($result['data'])) {
+            foreach ($result['data'] as $item) {
+                $time = isset($item['effective_time']) ? strtotime($item['effective_time']) : false;
+                if ($time !== false && $time > $effective_time && isset($item['encrypt_certificate'])) {
+                    $effective_time = $time;
+                    $encert = $item['encrypt_certificate'];
+                }
             }
         }
+        if (!$encert) {
+            throw new Exception('微信支付平台证书获取失败');
+        }
 
-        $certificate = $this->decryptToString($encert['ciphertext'], $encert['nonce'], $encert['associated_data']);
+        $certificate = $this->decryptToString($encert['ciphertext'] ?? '', $encert['nonce'] ?? '', $encert['associated_data'] ?? '');
         if (!$certificate) {
             throw new Exception('微信支付平台证书解密失败');
         }
-        if (!file_put_contents($this->platformCertificateFilePath, $certificate)) {
+        if (!empty($this->platformCertificateFilePath) && !file_put_contents($this->platformCertificateFilePath, $certificate)) {
             throw new Exception('微信支付平台证书保存失败，可能无文件写入权限');
         }
         //从证书解析公钥与序列号
@@ -307,34 +314,26 @@ class BaseService
      */
     protected function checkResponseSign(string $body, string $header): bool
     {
-        if (!$this->platformCertificateSerial) return true;
+        if (!$this->platformPublicKeyInstance) return false;
 
-        if (preg_match('/Wechatpay-Signature: (.*?)\r\n/', $header, $signature)) {
-            $signature = $signature[1];
-        }
-        if (preg_match('/Wechatpay-Nonce: (.*?)\r\n/', $header, $nonce)) {
-            $nonce = $nonce[1];
-        }
-        if (preg_match('/Wechatpay-Timestamp: (.*?)\r\n/', $header, $timestamp)) {
-            $timestamp = $timestamp[1];
-        }
-        if (preg_match('/Wechatpay-Serial: (.*?)\r\n/', $header, $serial)) {
-            $serial = $serial[1];
-        }
+        $signature = $this->getHeaderValue($header, 'Wechatpay-Signature');
+        $nonce = $this->getHeaderValue($header, 'Wechatpay-Nonce');
+        $timestamp = $this->getHeaderValue($header, 'Wechatpay-Timestamp');
+        $serial = $this->getHeaderValue($header, 'Wechatpay-Serial');
 
-        if (empty($signature)) return false;
-        if ($serial != $this->platformCertificateSerial) {
+        if ($signature === '' || $nonce === '' || $timestamp === '' || $serial === '') return false;
+        if ($serial !== (string)$this->platformCertificateSerial) {
             if (substr($serial, 0, 11) == 'PUB_KEY_ID_') {
                 throw new Exception('微信支付公钥ID不匹配');
             } else {
-                if (substr($this->platformCertificateSerial, 0, 11) == 'PUB_KEY_ID_') {
+                if (substr((string)$this->platformCertificateSerial, 0, 11) == 'PUB_KEY_ID_') {
                     $this->loadPlatformCertificate();
                 }
-                if ($serial != $this->platformCertificateSerial) {
+                if ($serial !== (string)$this->platformCertificateSerial) {
                     if (!$this->download_cert) {
                         $this->downloadCertificate();
                     }
-                    if ($serial != $this->platformCertificateSerial) {
+                    if ($serial !== (string)$this->platformCertificateSerial) {
                         throw new Exception('平台证书序列号不匹配');
                     }
                 }
@@ -342,6 +341,20 @@ class BaseService
         }
 
         return $this->checkSign($timestamp, $nonce, $body, $signature);
+    }
+
+    /**
+     * 从原始响应头中获取指定头部的值（不区分大小写）
+     * @param string $header 原始响应头
+     * @param string $name 头部名称
+     * @return string
+     */
+    protected function getHeaderValue(string $header, string $name): string
+    {
+        if (preg_match('/^' . preg_quote($name, '/') . ':[ \t]*(.*?)[ \t]*\r?$/mi', $header, $matches)) {
+            return $matches[1];
+        }
+        return '';
     }
 
     /**
@@ -394,23 +407,26 @@ class BaseService
 	 */
     public function notify(): array
     {
-        $inWechatpaySignature = $_SERVER['HTTP_WECHATPAY_SIGNATURE'];
-        $inWechatpayTimestamp = $_SERVER['HTTP_WECHATPAY_TIMESTAMP'];
-        $inWechatpaySerial = $_SERVER['HTTP_WECHATPAY_SERIAL'];
-        $inWechatpayNonce = $_SERVER['HTTP_WECHATPAY_NONCE'];
+        $inWechatpaySignature = self::serverString('HTTP_WECHATPAY_SIGNATURE');
+        $inWechatpayTimestamp = self::serverString('HTTP_WECHATPAY_TIMESTAMP');
+        $inWechatpaySerial = self::serverString('HTTP_WECHATPAY_SERIAL');
+        $inWechatpayNonce = self::serverString('HTTP_WECHATPAY_NONCE');
         $inBody = file_get_contents('php://input');
 
         if (empty($inBody)) {
             throw new Exception('no data');
         }
-        if ($this->platformCertificateSerial != $inWechatpaySerial) {
+        if ($inWechatpaySignature === '' || $inWechatpayTimestamp === '' || $inWechatpaySerial === '' || $inWechatpayNonce === '') {
+            throw new Exception('缺少签名信息');
+        }
+        if ((string)$this->platformCertificateSerial !== $inWechatpaySerial) {
             if (substr($inWechatpaySerial, 0, 11) == 'PUB_KEY_ID_') {
                 throw new Exception('微信支付公钥ID不匹配');
             } else {
-                if (substr($this->platformCertificateSerial, 0, 11) == 'PUB_KEY_ID_') {
+                if (substr((string)$this->platformCertificateSerial, 0, 11) == 'PUB_KEY_ID_') {
                     $this->loadPlatformCertificate();
                 }
-                if ($inWechatpaySerial != $this->platformCertificateSerial) {
+                if ($inWechatpaySerial !== (string)$this->platformCertificateSerial) {
                     throw new Exception('平台证书序列号不匹配');
                 }
             }
@@ -422,21 +438,32 @@ class BaseService
         }
 
         // 转换通知的JSON文本消息为PHP Array数组
-        $inBodyArray = (array)json_decode($inBody, true);
-        // 使用PHP7的数据解构语法，从Array中解构并赋值变量
-        ['resource' => [
-            'ciphertext'      => $ciphertext,
-            'nonce'           => $nonce,
-            'associated_data' => $associated_data
-        ]] = $inBodyArray;
+        $inBodyArray = json_decode($inBody, true);
+        $resource = is_array($inBodyArray) && isset($inBodyArray['resource']) && is_array($inBodyArray['resource']) ? $inBodyArray['resource'] : null;
+        if (!$resource || !isset($resource['ciphertext'], $resource['nonce'])) {
+            throw new Exception('通知数据格式错误');
+        }
         // 加密文本消息解密
-        $inBodyResource = $this->decryptToString($ciphertext, $nonce, $associated_data);
+        $inBodyResource = $this->decryptToString((string)$resource['ciphertext'], (string)$resource['nonce'], (string)($resource['associated_data'] ?? ''));
         if (!$inBodyResource) {
             throw new Exception('数据解密失败');
         }
         // 把解密后的文本转换为PHP Array数组
-	    // print_r($inBodyResourceArray);
-        return json_decode($inBodyResource, true);
+        $data = json_decode($inBodyResource, true);
+        if (!is_array($data)) {
+            throw new Exception('解密数据解析失败');
+        }
+        return $data;
+    }
+
+    /**
+     * 获取$_SERVER中的字符串值
+     * @param string $key
+     * @return string
+     */
+    private static function serverString(string $key): string
+    {
+        return isset($_SERVER[$key]) && is_string($_SERVER[$key]) ? trim($_SERVER[$key]) : '';
     }
 
     /**
@@ -544,7 +571,8 @@ class BaseService
     {
         $ch = curl_init();
         $curlVersion = curl_version();
-        $ua = "wechatpay-php/" . self::$VERSION . " curl/" . $curlVersion['version'] . " (" . PHP_OS . "/" . php_uname('r') . ") PHP/" . PHP_VERSION;
+        $osRelease = function_exists('php_uname') ? php_uname('r') : '';
+        $ua = "wechatpay-php/" . self::$VERSION . " curl/" . $curlVersion['version'] . " (" . PHP_OS . "/" . $osRelease . ") PHP/" . PHP_VERSION;
 
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -566,14 +594,12 @@ class BaseService
         $data = curl_exec($ch);
         if (curl_errno($ch) > 0) {
             $errmsg = curl_error($ch);
-            curl_close($ch);
             throw new Exception($errmsg, 0);
         }
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        $header = substr($data, 0, $headerSize);
-        $body = substr($data, $headerSize);
-        curl_close($ch);
+        $header = substr((string)$data, 0, $headerSize);
+        $body = (string)substr((string)$data, $headerSize);
         return [$httpCode, $header, $body];
     }
 }

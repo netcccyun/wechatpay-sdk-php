@@ -24,7 +24,7 @@ $params = [
 try {
     $client = new \WeChatPay\V3\PaymentService($wechatpay_config);
     $result = $client->refund($params);
-    echo '退款成功！退款金额：'.$result['refund_fee'];
+    echo '退款成功！退款金额：'.$result['amount']['refund'];
 } catch (Exception $e) {
     echo '退款失败！'.$e->getMessage();
 }

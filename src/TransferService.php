@@ -18,7 +18,7 @@ class TransferService extends BaseService
     {
         parent::__construct($config);
 
-        $this->publicKeyPath = $config['publickey_path'];
+        $this->publicKeyPath = $config['publickey_path'] ?? null;
         $this->publicParams = [
             'nonce_str'  => $this->getNonceStr(),
         ];
@@ -67,7 +67,7 @@ class TransferService extends BaseService
             'mchid' => $this->mchId,
             'partner_trade_no' => $partner_trade_no
         ];
-        return $this->execute($url, $params);
+        return $this->execute($url, $params, true);
     }
 
     /**
@@ -127,7 +127,7 @@ class TransferService extends BaseService
             'mch_id' => $this->mchId,
             'partner_trade_no' => $partner_trade_no
         ];
-        return $this->execute($url, $params);
+        return $this->execute($url, $params, true);
     }
 
     /**
@@ -141,6 +141,9 @@ class TransferService extends BaseService
             'mch_id' => $this->mchId,
         ];
         $result = $this->execute($url, $params, true);
+        if (empty($result['pub_key']) || !is_string($result['pub_key'])) {
+            throw new Exception('RSA加密公钥获取失败');
+        }
         $pub_key = $result['pub_key'];
         $pub_key = RsaTool::pkcs1ToSpkiPem($pub_key);
         return $pub_key;
@@ -155,7 +158,9 @@ class TransferService extends BaseService
 	 */
     private function encryptData(string $data, $pubkeyid): string
     {
-        openssl_public_encrypt($data, $encrypted, $pubkeyid, OPENSSL_PKCS1_OAEP_PADDING);
+        if (!openssl_public_encrypt($data, $encrypted, $pubkeyid, OPENSSL_PKCS1_OAEP_PADDING)) {
+            throw new Exception('RSA加密失败');
+        }
 	    return base64_encode($encrypted);
     }
 }

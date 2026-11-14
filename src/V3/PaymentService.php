@@ -152,7 +152,8 @@ class PaymentService extends BaseService
     {
         try {
             $data = $this->orderQuery($transaction_id);
-            return $data['trade_state'] == 'SUCCESS' || $data['trade_state'] == 'REFUND';
+            $trade_state = $data['trade_state'] ?? '';
+            return $trade_state == 'SUCCESS' || $trade_state == 'REFUND';
         } catch (Exception $e) {
             return false;
         }

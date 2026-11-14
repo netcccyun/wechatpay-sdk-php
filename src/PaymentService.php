@@ -96,7 +96,7 @@ class PaymentService extends BaseService
             'timeStamp' => time() . '',
             'nonceStr' => $this->getNonceStr(),
             'package' => 'prepay_id=' . $prepay_id,
-            'signType' => 'MD5',
+            'signType' => $this->getSignType(),
         ];
         $params['paySign'] = $this->makeSign($params);
         return $params;
@@ -218,7 +218,8 @@ class PaymentService extends BaseService
     {
         try {
             $data = $this->orderQuery($transaction_id);
-            return $data['trade_state'] == 'SUCCESS' || $data['trade_state'] == 'REFUND';
+            $trade_state = $data['trade_state'] ?? '';
+            return $trade_state == 'SUCCESS' || $trade_state == 'REFUND';
         } catch (Exception $e) {
             return false;
         }
@@ -232,7 +233,7 @@ class PaymentService extends BaseService
 	 */
     public function closeOrder(string $out_trade_no)
     {
-        $url = 'https://api.mch.weixin.qq.com/pay/orderquery';
+        $url = 'https://api.mch.weixin.qq.com/pay/closeorder';
         $params = [
             'out_trade_no' => $out_trade_no
         ];
@@ -281,7 +282,7 @@ class PaymentService extends BaseService
 	/**
 	 * 下载对账单
 	 * @param array $params
-	 * @return mixed
+	 * @return string 账单内容
 	 * @throws Exception
 	 */
     public function downloadBill(array $params)
@@ -290,13 +291,14 @@ class PaymentService extends BaseService
         if (empty($params['bill_date'])) {
             throw new \InvalidArgumentException('bill_date参数不能为空');
         }
-        return $this->execute($url, $params);
+        //成功时返回的是文本账单，不能按XML解析
+        return $this->download($url, $params);
     }
 
 	/**
 	 * 下载资金账单
 	 * @param array $params
-	 * @return mixed
+	 * @return string 账单内容
 	 * @throws Exception
 	 */
     public function downloadFundFlow(array $params)
@@ -308,7 +310,9 @@ class PaymentService extends BaseService
         if (empty($params['account_type'])) {
             throw new \InvalidArgumentException('account_type参数不能为空');
         }
-        return $this->execute($url, $params);
+        //该接口仅支持HMAC-SHA256签名，且需要商户证书
+        $params['sign_type'] = 'HMAC-SHA256';
+        return $this->download($url, $params, true);
     }
 
 	/**
@@ -323,13 +327,14 @@ class PaymentService extends BaseService
             throw new Exception('NO_DATA');
         }
         $result = $this->xml2array($xml);
-        if (!$result) {
+        if (!$result || !is_array($result)) {
             throw new Exception('XML_ERROR');
         }
-        if ($result['return_code'] != 'SUCCESS') {
-            throw new Exception($result['return_msg']);
+        if (($result['return_code'] ?? '') != 'SUCCESS') {
+            throw new Exception(is_string($result['return_msg'] ?? null) ? $result['return_msg'] : 'FAIL');
         }
-        if (!$this->checkSign($result)) {
+        $signType = isset($result['sign_type']) && $result['sign_type'] === 'HMAC-SHA256' ? 'HMAC-SHA256' : 'MD5';
+        if (!$this->checkSign($result, $signType)) {
             throw new Exception('签名校验失败');
         }
         if (!isset($result['transaction_id'])) {
@@ -353,11 +358,11 @@ class PaymentService extends BaseService
             throw new Exception('NO_DATA');
         }
         $result = $this->xml2array($xml);
-        if (!$result) {
+        if (!$result || !is_array($result)) {
             throw new Exception('XML_ERROR');
         }
-        if ($result['return_code'] != 'SUCCESS') {
-            throw new Exception($result['return_msg'] ?? 'FAIL');
+        if (($result['return_code'] ?? '') != 'SUCCESS') {
+            throw new Exception(is_string($result['return_msg'] ?? null) ? $result['return_msg'] : 'FAIL');
         }
         if (empty($result['req_info'])) {
             throw new Exception('缺少req_info参数');

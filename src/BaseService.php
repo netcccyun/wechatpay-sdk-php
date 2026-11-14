@@ -52,8 +52,8 @@ class BaseService
         $this->appId = $config['appid'];
         $this->mchId = $config['mchid'];
         $this->apiKey = $config['apikey'];
-        $this->sslCertPath = $config['sslcert_path'];
-        $this->sslKeyPath = $config['sslkey_path'];
+        $this->sslCertPath = $config['sslcert_path'] ?? null;
+        $this->sslKeyPath = $config['sslkey_path'] ?? null;
         if (isset($config['sub_mchid'])) {
             $this->subMchId = $config['sub_mchid'];
         }
@@ -91,17 +91,55 @@ class BaseService
     }
 
     /**
+     * 下载账单接口（成功时返回的是账单文本而非XML）
+     * @param string $url url
+     * @param array $params 请求参数
+     * @param bool $cert 是否需要证书
+     * @return string 账单内容
+     * @throws Exception
+     */
+    public function download(string $url, array $params, bool $cert = false): string
+    {
+        $params = array_merge($this->publicParams, $params);
+        $this->signType = isset($params['sign_type']) ? $params['sign_type'] : 'MD5';
+        $params['sign'] = $this->makeSign($params);
+        $xml = $this->array2Xml($params);
+        $response = $this->curl($url, $xml, $cert);
+        //失败时返回XML格式的错误信息
+        if (strpos(ltrim(substr($response, 0, 64)), '<xml') === 0) {
+            $result = $this->xml2array($response);
+            throw new WeChatPayException($result);
+        }
+        return $response;
+    }
+
+    /**
      * 验签
      * @param $data
+     * @param string|null $signType 签名类型，默认使用最近一次请求的签名类型
      * @return bool
      */
-    protected function checkSign($data): bool
+    protected function checkSign($data, ?string $signType = null): bool
     {
-        if (!isset($data['sign'])) return false;
+        if (!isset($data['sign']) || !is_string($data['sign'])) return false;
 
+        $originSignType = $this->signType;
+        if ($signType !== null) {
+            $this->signType = $signType;
+        }
         $sign = $this->makeSign($data);
+        $this->signType = $originSignType;
 
-        return $sign === $data['sign'];
+        return hash_equals($sign, $data['sign']);
+    }
+
+    /**
+     * 获取当前使用的签名类型
+     * @return string
+     */
+    protected function getSignType(): string
+    {
+        return $this->signType === 'HMAC-SHA256' ? 'HMAC-SHA256' : 'MD5';
     }
 
     /**
@@ -163,7 +201,12 @@ class BaseService
     {
 	    $xml = '<xml>';
         foreach ($data as $key => $val) {
-            $xml .= (is_numeric($val) ? "<{$key}>{$val}</{$key}>" : "<{$key}><![CDATA[{$val}]]></{$key}>");
+            if (is_numeric($val)) {
+                $xml .= "<{$key}>{$val}</{$key}>";
+            } else {
+                $val = str_replace(']]>', ']]]]><![CDATA[>', (string)$val);
+                $xml .= "<{$key}><![CDATA[{$val}]]></{$key}>";
+            }
         }
         return $xml . '</xml>';
     }
@@ -219,10 +262,8 @@ class BaseService
         $data = curl_exec($ch);
         if (curl_errno($ch) > 0) {
             $errmsg = curl_error($ch);
-            curl_close($ch);
             throw new Exception($errmsg, 0);
         }
-        curl_close($ch);
-        return $data;
+        return (string)$data;
     }
 }

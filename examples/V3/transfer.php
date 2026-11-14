@@ -47,7 +47,7 @@ try {
 
 //查询转账明细
 try{
-    $result = $client->transferoutdetail($out_batch_no, $out_trade_no);
+    $result = $client->transferoutdetail($out_batch_no, $out_detail_no);
     print_r($result);
 } catch (Exception $e) {
     echo '查询失败！'.$e->getMessage();
